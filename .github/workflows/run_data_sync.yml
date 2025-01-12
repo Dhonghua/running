@@ -81,7 +81,7 @@ jobs:
             run_page/data.db
             src/static/activities.json
             imported.json
-          key: ${{ env.DATA_CACH1E_PREFIX }}-${{ github1.sha }}-${{ github.run1_id }}-v2
+          key: ${{ env.DATA_CACHE_PREFIX }}-${{ github.sha }}-${{ github.run_id }}
           restore-keys: |
             ${{ env.DATA_CACHE_PREFIX }}-${{ github.sha }}-
             ${{ env.DATA_CACHE_PREFIX }}-
