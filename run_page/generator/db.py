@@ -135,7 +135,7 @@ def update_or_create_activity(session, run_activity):
     return created
 
 
-def init_db1(db_path):
+def init_db(db_path):
     engine = create_engine(
         f"sqlite:///{db_path}", connect_args={"check_same_thread": False}
     )
