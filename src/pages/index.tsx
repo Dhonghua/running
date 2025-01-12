@@ -53,7 +53,7 @@ const Index = () => {
     }
     setActivity(filterAndSortRuns(activities, item, func, sortDateFunc));
     setRunIndex(-1);
-    setTitle(`${item} ${name} Running Heatmap`);
+    setTitle(`${item} ${name} 跑步热力图`);
   };
 
   const changeYear = (y: string) => {
@@ -124,7 +124,7 @@ const Index = () => {
   }, [runs]);
 
   useEffect(() => {
-    if (year !== 'Total') {
+    if (year !== '汇总') {
       return;
     }
 
@@ -195,7 +195,7 @@ const Index = () => {
           changeYear={changeYear}
           thisYear={year}
         />
-        {year === 'Total' ? (
+        {year === '汇总' ? (
           <SVGStat />
         ) : (
           <RunTable
