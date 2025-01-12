@@ -6,7 +6,7 @@ import subprocess
 import sys
 import time
 from collections import namedtuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from hashlib import md5
 from urllib.parse import quote
 
@@ -156,7 +156,7 @@ class Joyrun:
 
     def get_runs_records_ids(self):
         payload = {
-            "year": 0,
+            "year": 0,  # as of the "year". when set to 2023, it means fetch records during currentYear ~ 2023. set to 0 means fetch all.
         }
         r = self.session.post(
             f"{self.base_url}/userRunList.aspx",
@@ -209,7 +209,7 @@ class Joyrun:
             points_dict = {
                 "latitude": point[0],
                 "longitude": point[1],
-                "time": datetime.utcfromtimestamp(current_time),
+                "time": datetime.fromtimestamp(current_time, tz=timezone.utc),
             }
             points_dict_list.append(points_dict)
 
@@ -224,7 +224,7 @@ class Joyrun:
             {
                 "latitude": run_points_data[-1][0],
                 "longitude": run_points_data[-1][1],
-                "time": datetime.utcfromtimestamp(end_time),
+                "time": datetime.fromtimestamp(end_time, tz=timezone.utc),
             }
         )
         segment_list.append(points_dict_list)
@@ -289,9 +289,9 @@ class Joyrun:
 
         polyline_str = polyline.encode(run_points_data) if run_points_data else ""
         start_latlng = start_point(*run_points_data[0]) if run_points_data else None
-        start_date = datetime.utcfromtimestamp(start_time)
+        start_date = datetime.fromtimestamp(start_time, tz=timezone.utc)
         start_date_local = adjust_time(start_date, BASE_TIMEZONE)
-        end = datetime.utcfromtimestamp(end_time)
+        end = datetime.fromtimestamp(end_time, tz=timezone.utc)
         # only for China now
         end_local = adjust_time(end, BASE_TIMEZONE)
         location_country = None
@@ -303,6 +303,7 @@ class Joyrun:
             "name": "run from joyrun",
             # future to support others workout now only for run
             "type": "Run",
+            "subtype": "Run",
             "start_date": datetime.strftime(start_date, "%Y-%m-%d %H:%M:%S"),
             "end": datetime.strftime(end, "%Y-%m-%d %H:%M:%S"),
             "start_date_local": datetime.strftime(
@@ -323,7 +324,7 @@ class Joyrun:
         }
         return namedtuple("x", d.keys())(*d.values())
 
-    def get_all_joyrun_tracks(self, old_tracks_ids, with_gpx=False):
+    def get_all_joyrun_tracks(self, old_tracks_ids, with_gpx=False, threshold=10):
         run_ids = self.get_runs_records_ids()
         old_tracks_ids = [int(i) for i in old_tracks_ids if i.isdigit()]
 
@@ -331,10 +332,29 @@ class Joyrun:
         old_gpx_ids = [i.split(".")[0] for i in old_gpx_ids if not i.startswith(".")]
         new_run_ids = list(set(run_ids) - set(old_tracks_ids))
         tracks = []
+        seen_runs = {}  # Dictionary to keep track of unique runs with start time as key
         for i in new_run_ids:
             run_data = self.get_single_run_record(i)
-            track = self.parse_raw_data_to_nametuple(run_data, old_gpx_ids, with_gpx)
-            tracks.append(track)
+            start_time = datetime.fromtimestamp(run_data["runrecord"]["starttime"])
+            distance = run_data["runrecord"]["meter"]
+
+            is_duplicate = False
+            for seen_start in list(seen_runs.keys()):
+                if abs((start_time - seen_start).total_seconds()) <= threshold:
+                    if distance > seen_runs[seen_start]["distance"]:
+                        seen_runs[seen_start] = {
+                            "run_data": run_data,
+                            "distance": distance,
+                        }
+                    is_duplicate = True
+                    break
+            if not is_duplicate:
+                seen_runs[start_time] = {"run_data": run_data, "distance": distance}
+            for run in seen_runs.values():
+                track = self.parse_raw_data_to_nametuple(
+                    run["run_data"], old_gpx_ids, with_gpx
+                )
+                tracks.append(track)
         return tracks
 
 
@@ -439,6 +459,13 @@ if __name__ == "__main__":
         action="store_true",
         help="from uid and sid for download datas",
     )
+    parser.add_argument(
+        "--threshold",
+        dest="threshold",
+        help="threshold in seconds to consider runs as duplicates",
+        type=int,
+        default=10,
+    )
     options = parser.parse_args()
     if options.from_uid_sid:
         j = Joyrun.from_uid_sid(
@@ -454,7 +481,9 @@ if __name__ == "__main__":
 
     generator = Generator(SQL_FILE)
     old_tracks_ids = generator.get_old_tracks_ids()
-    tracks = j.get_all_joyrun_tracks(old_tracks_ids, options.with_gpx)
+    tracks = j.get_all_joyrun_tracks(
+        old_tracks_ids, options.with_gpx, options.threshold
+    )
     generator.sync_from_app(tracks)
     activities_list = generator.load()
     with open(JSON_FILE, "w") as f:
