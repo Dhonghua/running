@@ -35,7 +35,7 @@ const LocationStat = ({
     <LocationSummary />
     <CitiesStat onClick={changeCity} />
     <PeriodStat onClick={changeTitle} />
-    <YearStat year="Total" onClick={changeYear} />
+    <YearStat year="全部" onClick={changeYear} />
   </div>
 );
 
