@@ -124,7 +124,7 @@ const Index = () => {
   }, [runs]);
 
   useEffect(() => {
-    if (year !== '汇总') {
+    if (year !== '全部') {
       return;
     }
 
@@ -195,7 +195,7 @@ const Index = () => {
           changeYear={changeYear}
           thisYear={year}
         />
-        {year === '汇总' ? (
+        {year === '全部' ? (
           <SVGStat />
         ) : (
           <RunTable
