@@ -29,7 +29,7 @@ env:
   ATHLETE: Honghua
   TITLE: Honghua Running
   MIN_GRID_DISTANCE: 10 # change min distance here
-  TITLE_GRID: Over 10km Runs # also here
+  TITLE_GRID: 跑步超过10公里 # also here
   GITHUB_NAME: Honghua # change to yours
   GITHUB_EMAIL: 1025164368@qq.com # change to yours
 
