@@ -64,7 +64,7 @@ const YearStat = ({ year, onClick }: { year: string, onClick: (_year: string) =>
           <Stat value={avgHeartRate} description=" 平均心率" />
         )}
       </section>
-      {year !== '汇总' && hovered && (
+      {year !== '全部' && hovered && (
         <Suspense fallback="loading...">
           <YearSVG className="my-4 h-4/6 w-4/6 border-0 p-0" />
         </Suspense>
